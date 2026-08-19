@@ -15,12 +15,28 @@ dotenv.config();
 
 const app = express();
 
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error("Database connection error:", error.message);
+    res.status(500).json({ message: "Database connection failed" });
+  }
+});
+
 app.use(cors());
 app.use(express.json());
 
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "ok",
+  });
+});
+
+app.get("/", (req, res) => {
+  res.status(200).json({
+    message: "MetroSync API is running successfully!",
   });
 });
 
@@ -37,31 +53,13 @@ app.use((err, req, res, next) => {
 });
 
 const server = http.createServer(app);
-
 initSocket(server);
 
-const PORT = process.env.PORT || 3000;
-
-const startServer = async () => {
-  try {
-    await connectDB();
-
-    server.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error(
-      "Server startup failed:",
-      error.message
-    );
-  }
-};
-
 if (require.main === module) {
-  startServer();
+  const PORT = process.env.PORT || 3000;
+  server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
 }
 
-module.exports = {
-  app,
-  server,
-};
+module.exports = app;
